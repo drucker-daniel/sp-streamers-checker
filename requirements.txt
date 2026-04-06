@@ -1,0 +1,8 @@
+espn-api
+python-dotenv
+requests
+beautifulsoup4
+lxml
+tabulate
+twilio
+playwright
