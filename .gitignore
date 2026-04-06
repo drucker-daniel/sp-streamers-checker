@@ -25,5 +25,8 @@ debug_article.html
 # Results files
 available_streamers_*.txt
 
+# Sent-email tracking
+.sent/
+
 # macOS
 .DS_Store
