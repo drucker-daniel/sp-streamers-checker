@@ -5,6 +5,13 @@ Tests for notify.py — Brevo email sending.
 import pytest
 from unittest.mock import patch, MagicMock
 
+@pytest.fixture(autouse=True)
+def _skip_sent_check():
+    """Disable the sent-today check so existing tests aren't affected."""
+    with patch("notify._was_sent_today", return_value=False), \
+         patch("notify._mark_sent"):
+        yield
+
 
 # ---------------------------------------------------------------------------
 # send_sms
@@ -96,3 +103,41 @@ class TestSendSms:
         assert "Tarik Skubal" in text
         assert "Andrew Abbott" in text
         assert "AVAIL" in text
+
+
+class TestSentDedup:
+    """Tests for the once-per-day email dedup logic."""
+
+    PITCHERS = TestSendSms.PITCHERS
+    AVAILABLE = TestSendSms.AVAILABLE
+
+    def test_skips_if_already_sent(self):
+        """If an email was already sent for this date, send_sms returns False."""
+        from notify import send_sms
+        env = {"BREVO_API_KEY": "test-key", "EMAIL_TO": "t@t.com", "EMAIL_FROM": "f@f.com"}
+
+        with patch.dict("os.environ", env), \
+             patch("notify._was_sent_today", return_value=True), \
+             patch("notify._mark_sent"), \
+             patch("requests.post") as mock_post:
+            result = send_sms(self.PITCHERS, self.AVAILABLE, "2026-04-06")
+
+        assert result is False
+        mock_post.assert_not_called()
+
+    def test_marks_sent_on_success(self, tmp_path):
+        """A successful send creates the sentinel file."""
+        from notify import send_sms, SENT_DIR, _mark_sent, _was_sent_today
+        import notify
+
+        sent_dir = tmp_path / ".sent"
+        with patch.object(notify, "SENT_DIR", sent_dir), \
+             patch.dict("os.environ", {"BREVO_API_KEY": "k", "EMAIL_TO": "t@t.com", "EMAIL_FROM": "f@f.com"}), \
+             patch("notify._was_sent_today", return_value=False), \
+             patch("requests.post", return_value=MagicMock()):
+            # Restore real _mark_sent for this test
+            with patch.object(notify, "_mark_sent", wraps=lambda d: (sent_dir.mkdir(exist_ok=True), (sent_dir / f"{d}.sent").touch())):
+                result = send_sms(self.PITCHERS, self.AVAILABLE, "2026-04-06")
+
+        assert result is True
+        assert (sent_dir / "2026-04-06.sent").exists()

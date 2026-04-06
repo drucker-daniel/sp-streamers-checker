@@ -4,9 +4,24 @@ Email notifications via Brevo (formerly Sendinblue).
 
 import logging
 import os
+from pathlib import Path
+
 import requests
 
 logger = logging.getLogger(__name__)
+
+SENT_DIR = Path(__file__).resolve().parent / ".sent"
+
+
+def _was_sent_today(target_date: str) -> bool:
+    """Check if an email was already sent for this date."""
+    return (SENT_DIR / f"{target_date}.sent").exists()
+
+
+def _mark_sent(target_date: str) -> None:
+    """Record that an email was sent for this date."""
+    SENT_DIR.mkdir(exist_ok=True)
+    (SENT_DIR / f"{target_date}.sent").touch()
 
 
 def send_sms(all_pitchers: list[dict], available: list[dict], target_date: str) -> bool:
@@ -21,6 +36,10 @@ def send_sms(all_pitchers: list[dict], available: list[dict], target_date: str) 
 
     if not api_key:
         logger.debug("BREVO_API_KEY not configured — skipping email")
+        return False
+
+    if _was_sent_today(target_date):
+        print(f"Email already sent for {target_date} — skipping.")
         return False
 
     available_names = {p["name"] for p in available}
@@ -82,6 +101,7 @@ def send_sms(all_pitchers: list[dict], available: list[dict], target_date: str) 
             headers={"api-key": api_key, "Content-Type": "application/json"},
         )
         resp.raise_for_status()
+        _mark_sent(target_date)
         print(f"\n--- Email content ---\n{text_body}\n---")
         print(f"Email sent to {to_email}")
         return True
