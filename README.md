@@ -106,3 +106,47 @@ Tests cover:
 - Email generation (HTML structure, status labels, error handling)
 
 All tests use mocks — no network calls or ESPN credentials required.
+
+---
+
+## Claude Code Commands
+
+This project was built and is maintained using [Claude Code](https://claude.ai/code). Useful commands:
+
+### Run the app
+```
+run app
+```
+
+### Run tests
+```
+python3 -m pytest tests/ -v
+```
+
+### Refresh ESPN cookies manually
+```
+python3 refresh_cookies.py
+```
+
+### Send a test email
+```python
+python3 -c "
+from dotenv import load_dotenv; load_dotenv()
+from notify import send_sms
+send_sms(
+    [{'name': 'Test Pitcher', 'tier': 'Auto-Start', 'matchup': 'vs TEST'}],
+    [{'name': 'Test Pitcher'}],
+    '2026-04-06 (test)'
+)
+"
+```
+
+### Dry run (no ESPN login, no email)
+```
+python3 main.py --dry-run
+```
+
+### Check a past date's article
+```
+python3 main.py --date 2026-04-06 --dry-run
+```
