@@ -1,4 +1,4 @@
-# SP Streamers Checker
+# SP Streamers Checker1
 
 Checks [PitcherList's daily SP Streamers article](https://pitcherlist.com/category/fantasy/starting-pitchers/sp-streamers/) and cross-references the top-ranked pitchers against your ESPN Fantasy Baseball league to surface who's actually available to pick up.
 
